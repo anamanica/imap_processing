@@ -5,17 +5,15 @@ import pandas as pd
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
 
-from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import load_cdf, write_cdf
-
-# Create CDF Object and stuff
-idex_attrs = ImapCdfAttributes()
-idex_attrs.add_instrument_global_attrs("idex")
-idex_attrs.add_instrument_variable_attrs("idex", "l1")
-attrs = idex_attrs.get_global_attributes(
-    "imap_idex_l1_sci"
-) | idex_attrs.get_variable_attributes("sample_rate_base")
-print(attrs)
+# COMPLEX EXAMPLE USAGE
+# # Create CDF Object and stuff
+# idex_attrs = ImapCdfAttributes()
+# idex_attrs.add_instrument_global_attrs("idex")
+# idex_attrs.add_instrument_variable_attrs("idex", "l1")
+# attrs = idex_attrs.get_global_attributes(
+#     "imap_idex_l1_sci"
+# ) | idex_attrs.get_variable_attributes("sample_rate_base")
+# print(attrs)
 
 # Create some example data
 temperature = np.random.rand(5, 3) * 30  # 5 days, 3 locations
@@ -39,7 +37,8 @@ data = xr.Dataset(
         "time": times,
         "location": locations,
     },
-    attrs=attrs,
+    # attrs=attrs, COMPLEX
+    attrs={"FILLVAL": "-1.0e31", "VALIDMAX": 130},
 )
 
 # Ensure all attribute values are strings to avoid issues
@@ -75,5 +74,6 @@ xarray_to_cdf(
 # cdf_to_xarray(file_name)
 print("Passed gen functions")
 
-cdf_file = write_cdf(data)
-load_cdf(cdf_file)
+# COMPLEX USAGE
+# cdf_file = write_cdf(data)
+# load_cdf(cdf_file)
