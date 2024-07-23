@@ -1,0 +1,21 @@
+sample_rate_min: &sample_rate_min -130
+sample_rate_max: &sample_rate_max 130
+
+sample_rate_base:
+  DISPLAY_TYPE: no_plot
+  CATDESC: "Text"
+  FIELDNAM: "Text"
+  FILLVAL: -1.0e+31 #-1.0E31 #-1.0e+31
+  VALIDMIN: *sample_rate_min
+  VALIDMAX: *sample_rate_max
+  DEPEND_0: epoch
+  FORMAT: F64.5
+  LABLAXIS: Time
+  UNITS: microseconds
+  VAR_TYPE: support_data # Not in attrs file
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+  VAR_NOTES:  The number of microseconds since the event.
+              0 is the start of data collection, negative
+              numbers represent data collected prior to a dust event
