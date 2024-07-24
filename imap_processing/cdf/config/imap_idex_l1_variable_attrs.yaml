@@ -53,7 +53,7 @@ sample_rate_base: &sample_rate_base
   DISPLAY_TYPE: no_plot
   CATDESC: ""
   FIELDNAM: ""
-  FILLVAL: -1.0e+31
+  FILLVAL: -1.0E31 # -1.0e+31
   VALIDMIN: *sample_rate_min
   VALIDMAX: *sample_rate_max
   DEPEND_0: epoch
