@@ -148,7 +148,7 @@ def written_data():
         "UNITS": "seconds",
         "VALIDMIN": -130,
         "VALIDMAX": 130,
-        "FILLVAL": -1.0e31,
+        "FILLVAL": "-1.0E31",
         "DEPEND_0": "epoch",
         "DEPEND_1": "location",
     }
@@ -216,7 +216,7 @@ def test_cdflib_calls_written(written_data):
     cdf_to_xarray(file_name)
 
 
-# Now this one. This one DOESN'T fail. Isn't that weird?
+@pytest.mark.xfail()  # Comment this out to see full error!
 def testing_utils_calls_written(written_data):
     # Dealing with files for utils calls
     file_name_2 = (
