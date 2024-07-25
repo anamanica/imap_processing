@@ -1,8 +1,4 @@
 global_stuff:
-  # FILLVAL: -1.0e+31 #-1.0E31 #-1.0e+31
-  VALIDMIN: -130
-  VALIDMAX: 130
-  FORMAT: F64.5
   Logical_source: imap_idex_l1_sci
   Data_version: v123
   Project: Project Input
@@ -17,34 +13,33 @@ global_stuff:
   Mission_group: Cats
   Logical_source_description: no
 
-istp_dict:
-  VAR_TYPE: data
-  Project: Project input
-  CATDESC: Catdesc input
-  DISPLAY_TYPE: no_plot
-  LABLAXIS: Label
-  FIELDNAM: Field
-  FORMAT: I10
-  UNITS: seconds
-  VALIDMIN: -130
-  VALIDMAX: 130
-  FILLVAL: HELLO
-
-
 epoch:
   CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
   FIELDNAM: epoch
   FILLVAL: -9223372036854775808
-  LABLAXIS: epoch
   FORMAT: ""  # Supposedly not required, fails in xarray_to_cdf
   UNITS: ns
   VALIDMIN: -315575942816000000
   VALIDMAX: 3155630469184000000
   VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
-  DISPLAY_TYPE: spectrogram
+
+location_attrs:
+  VAR_TYPE: support_data
+  CATDESC: ""
+  FIELDNAM: ""
+  FORMAT: ""
+  UNITS: ""
+
+temperature:
+  VAR_TYPE: data
+  CATDESC: Catdesc input
+  DISPLAY_TYPE: no_plot
+  LABLAXIS: Label
+  FIELDNAM: Field
+  FORMAT: F64.5
+  UNITS: seconds
+  VALIDMIN: -130
+  VALIDMAX: 130
+  FILLVAL: -1.0E31 #-1.0e+31 #-1.0E31
   DEPEND_0: epoch
+  DEPEND_1: location
