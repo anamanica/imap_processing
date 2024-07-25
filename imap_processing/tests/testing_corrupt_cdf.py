@@ -85,7 +85,7 @@ def test_cdflib_calls(data):
     cdf_to_xarray(file_name)
 
 
-@pytest.mark.xfail()  # Comment this out to see full error!
+# @pytest.mark.xfail()
 def testing_utils_calls(data):
     # Dealing with files for utils calls
     data_version = data.attrs["Data_version"]
@@ -216,7 +216,7 @@ def test_cdflib_calls_written(written_data):
     cdf_to_xarray(file_name)
 
 
-@pytest.mark.xfail()  # Comment this out to see full error!
+# @pytest.mark.xfail()
 def testing_utils_calls_written(written_data):
     # Dealing with files for utils calls
     file_name_2 = (
