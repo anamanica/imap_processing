@@ -17,7 +17,6 @@ idex_attrs.source_dir = Path(__file__).parent.parent / "tests"
 idex_attrs.add_instrument_global_attrs("idex")
 idex_attrs.add_instrument_variable_attrs("idex", "l1")
 logical_source = idex_attrs.get_global_attributes("imap_idex_l1_sci")
-attrs = idex_attrs.get_variable_attributes("global_stuff", False)
 
 # Create some example data
 temperature = np.random.rand(5, 3) * 30  # 5 days, 3 locations
@@ -73,7 +72,7 @@ data = xr.Dataset(
         ),
     },
     coords={"epoch": epoch, "location": location},
-    attrs=attrs,
+    attrs=idex_attrs.get_variable_attributes("global_stuff", False),
 )
 
 # File name

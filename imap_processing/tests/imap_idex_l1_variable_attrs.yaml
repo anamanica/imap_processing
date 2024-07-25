@@ -28,7 +28,7 @@ istp_dict:
   UNITS: seconds
   VALIDMIN: -130
   VALIDMAX: 130
-  FILLVAL: '-1.0e+31'
+  FILLVAL: HELLO
 
 
 epoch:
