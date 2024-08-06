@@ -1,6 +1,7 @@
 """Contains dataclasses to support IDEX processing."""
 
 from dataclasses import dataclass
+from enum import IntEnum
 
 
 @dataclass
@@ -25,3 +26,10 @@ class IdexConstants:
     DATA_MAX: int = 4096
     SAMPLE_RATE_MIN: int = -130
     SAMPLE_RATE_MAX: int = 130
+
+
+# TODO: This feels... wrong
+class IDEXAPID(IntEnum):
+    """Create ENUM for apid."""
+
+    SCIENCE_APID = 1424

@@ -9,12 +9,13 @@ from collections import namedtuple
 from enum import IntEnum
 
 import numpy as np
-import space_packet_parser
 import xarray as xr
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
-from imap_processing.idex.l0.idex_l0 import decom_packets
+from imap_processing.idex.idex_constants import IDEXAPID
+from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 
@@ -46,42 +47,42 @@ TriggerDescription = namedtuple(
 trigger_description_dict = {
     trigger.name: trigger
     for trigger in [
-        TriggerDescription("event_number", "IDX__TXHDREVTNUM"),
-        TriggerDescription("tof_high_trigger_level", "IDX__TXHDRHGTRIGLVL"),
-        TriggerDescription("tof_high_trigger_num_max_1_2", "IDX__TXHDRHGTRIGNMAX12"),
-        TriggerDescription("tof_high_trigger_num_min_1_2", "IDX__TXHDRHGTRIGNMIN12"),
-        TriggerDescription("tof_high_trigger_num_min_1", "IDX__TXHDRHGTRIGNMIN1"),
-        TriggerDescription("tof_high_trigger_num_max_1", "IDX__TXHDRHGTRIGNMAX1"),
-        TriggerDescription("tof_high_trigger_num_min_2", "IDX__TXHDRHGTRIGNMIN2"),
-        TriggerDescription("tof_high_trigger_num_max_2", "IDX__TXHDRHGTRIGNMAX2"),
-        TriggerDescription("tof_low_trigger_level", "IDX__TXHDRLGTRIGLVL"),
-        TriggerDescription("tof_low_trigger_num_max_1_2", "IDX__TXHDRLGTRIGNMAX12"),
-        TriggerDescription("tof_low_trigger_num_min_1_2", "IDX__TXHDRLGTRIGNMIN12"),
-        TriggerDescription("tof_low_trigger_num_min_1", "IDX__TXHDRLGTRIGNMIN1"),
-        TriggerDescription("tof_low_trigger_num_max_1", "IDX__TXHDRLGTRIGNMAX1"),
-        TriggerDescription("tof_low_trigger_num_min_2", "IDX__TXHDRLGTRIGNMIN2"),
-        TriggerDescription("tof_low_trigger_num_max_2", "IDX__TXHDRLGTRIGNMAX2"),
-        TriggerDescription("tof_mid_trigger_level", "IDX__TXHDRMGTRIGLVL"),
-        TriggerDescription("tof_mid_trigger_num_max_1_2", "IDX__TXHDRMGTRIGNMAX12"),
-        TriggerDescription("tof_mid_trigger_num_min_1_2", "IDX__TXHDRMGTRIGNMIN12"),
-        TriggerDescription("tof_mid_trigger_num_min_1", "IDX__TXHDRMGTRIGNMIN1"),
-        TriggerDescription("tof_mid_trigger_num_max_1", "IDX__TXHDRMGTRIGNMAX1"),
-        TriggerDescription("tof_mid_trigger_num_min_2", "IDX__TXHDRMGTRIGNMIN2"),
-        TriggerDescription("tof_mid_trigger_num_max_2", "IDX__TXHDRMGTRIGNMAX2"),
-        TriggerDescription("low_sample_coincidence_mode_blocks", "IDX__TXHDRLSTRIGCMBLOCKS"), # noqa
-        TriggerDescription("low_sample_trigger_polarity", "IDX__TXHDRLSTRIGPOL"),
-        TriggerDescription("low_sample_trigger_level", "IDX__TXHDRLSTRIGLVL"),
-        TriggerDescription("low_sample_trigger_num_min", "IDX__TXHDRLSTRIGNMIN"),
-        TriggerDescription("low_sample_trigger_mode", "IDX__TXHDRLSTRIGMODE"),
-        TriggerDescription("tof_low_trigger_mode", "IDX__TXHDRLSTRIGMODE"),
-        TriggerDescription("tof_mid_trigger_mode", "IDX__TXHDRMGTRIGMODE"),
-        TriggerDescription("tof_high_trigger_mode", "IDX__TXHDRHGTRIGMODE"),
-        TriggerDescription("detector_voltage", "IDX__TXHDRHVPSHKCH0"),
-        TriggerDescription("sensor_voltage", "IDX__TXHDRHVPSHKCH1"),
-        TriggerDescription("target_voltage", "IDX__TXHDRHVPSHKCH2"),
-        TriggerDescription("reflectron_voltage", "IDX__TXHDRHVPSHKCH3"),
-        TriggerDescription("rejection_voltage", "IDX__TXHDRHVPSHKCH4"),
-        TriggerDescription("detector_current", "IDX__TXHDRHVPSHKCH5"),
+        TriggerDescription("event_number", "idx__txhdrevtnum"),
+        TriggerDescription("tof_high_trigger_level", "idx__txhdrhgtriglvl"),
+        TriggerDescription("tof_high_trigger_num_max_1_2", "idx__txhdrhgtrignmax12"),
+        TriggerDescription("tof_high_trigger_num_min_1_2", "idx__txhdrhgtrignmin12"),
+        TriggerDescription("tof_high_trigger_num_min_1", "idx__txhdrhgtrignmin1"),
+        TriggerDescription("tof_high_trigger_num_max_1", "idx__txhdrhgtrignmax1"),
+        TriggerDescription("tof_high_trigger_num_min_2", "idx__txhdrhgtrignmin2"),
+        TriggerDescription("tof_high_trigger_num_max_2", "idx__txhdrhgtrignmax2"),
+        TriggerDescription("tof_low_trigger_level", "idx__txhdrlgtriglvl"),
+        TriggerDescription("tof_low_trigger_num_max_1_2", "idx__txhdrlgtrignmax12"),
+        TriggerDescription("tof_low_trigger_num_min_1_2", "idx__txhdrlgtrignmin12"),
+        TriggerDescription("tof_low_trigger_num_min_1", "idx__txhdrlgtrignmin1"),
+        TriggerDescription("tof_low_trigger_num_max_1", "idx__txhdrlgtrignmax1"),
+        TriggerDescription("tof_low_trigger_num_min_2", "idx__txhdrlgtrignmin2"),
+        TriggerDescription("tof_low_trigger_num_max_2", "idx__txhdrlgtrignmax2"),
+        TriggerDescription("tof_mid_trigger_level", "idx__txhdrmgtriglvl"),
+        TriggerDescription("tof_mid_trigger_num_max_1_2", "idx__txhdrmgtrignmax12"),
+        TriggerDescription("tof_mid_trigger_num_min_1_2", "idx__txhdrmgtrignmin12"),
+        TriggerDescription("tof_mid_trigger_num_min_1", "idx__txhdrmgtrignmin1"),
+        TriggerDescription("tof_mid_trigger_num_max_1", "idx__txhdrmgtrignmax1"),
+        TriggerDescription("tof_mid_trigger_num_min_2", "idx__txhdrmgtrignmin2"),
+        TriggerDescription("tof_mid_trigger_num_max_2", "idx__txhdrmgtrignmax2"),
+        TriggerDescription("low_sample_coincidence_mode_blocks", "idx__txhdrlstrigcmblocks"), # noqa
+        TriggerDescription("low_sample_trigger_polarity", "idx__txhdrlstrigpol"),
+        TriggerDescription("low_sample_trigger_level", "idx__txhdrlstriglvl"),
+        TriggerDescription("low_sample_trigger_num_min", "idx__txhdrlstrignmin"),
+        TriggerDescription("low_sample_trigger_mode", "idx__txhdrlstrigmode"),
+        TriggerDescription("tof_low_trigger_mode", "idx__txhdrlstrigmode"),
+        TriggerDescription("tof_mid_trigger_mode", "idx__txhdrmgtrigmode"),
+        TriggerDescription("tof_high_trigger_mode", "idx__txhdrhgtrigmode"),
+        TriggerDescription("detector_voltage", "idx__txhdrhvpshkch0"),
+        TriggerDescription("sensor_voltage", "idx__txhdrhvpshkch1"),
+        TriggerDescription("target_voltage", "idx__txhdrhvpshkch2"),
+        TriggerDescription("reflectron_voltage", "idx__txhdrhvpshkch3"),
+        TriggerDescription("rejection_voltage", "idx__txhdrhvpshkch4"),
+        TriggerDescription("detector_current", "idx__txhdrhvpshkch5"),
     ]
 }  # fmt: skip
 
@@ -151,27 +152,33 @@ class PacketParser:
         -----
             Currently assumes one L0 file will generate exactly one l1a file.
         """
-        decom_packet_list = decom_packets(packet_file)
+        xtce_filename = "idex_packet_definition.xml"
+        xtce_definition = (
+            f"{imap_module_directory}/idex/packet_definitions/{xtce_filename}"
+        )
+
+        datasets = packet_file_to_datasets(packet_file, xtce_definition, False)
+        ds = datasets[IDEXAPID.SCIENCE_APID.value]
+
+        all_packet_sci_types = ds["idx__sci0type"]
+        all_packet_event_numbers = ds["idx__sci0evtnum"]
 
         dust_events = {}
-        for packet in decom_packet_list:
-            if "IDX__SCI0TYPE" in packet.data:
-                scitype = packet.data["IDX__SCI0TYPE"].raw_value
-                event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
-                if scitype == Scitype.FIRST_PACKET:
-                    # Initial packet for new dust event
-                    # Further packets will fill in data
-                    dust_events[event_number] = RawDustEvent(packet, data_version)
-                elif event_number not in dust_events:
-                    raise KeyError(
-                        f"Have not receive header information from event number\
-                            {event_number}.  Packets are possibly out of order!"
-                    )
-                else:
-                    # Populate the IDEXRawDustEvent with 1's and 0's
-                    dust_events[event_number].parse_packet(packet)
+
+        for i in range(len(all_packet_sci_types)):
+            scitype = all_packet_sci_types[i].item()
+            event_number = all_packet_event_numbers[i].item()
+
+            if scitype == Scitype.FIRST_PACKET:
+                dust_events[event_number] = RawDustEvent(ds.isel(epoch=i), data_version)
+            elif event_number not in dust_events:
+                raise KeyError(
+                    f"Have not receive header information from event number\
+                    {event_number}.  Packets are possibly out of order!"
+                )
             else:
-                logger.warning(f"Unhandled packet received: {packet}")
+                # Populate the RawDustEvent with data from the dataset
+                dust_events[event_number].parse_packet(ds.isel(epoch=i))
 
         processed_dust_impact_list = [
             dust_event.process() for dust_event in dust_events.values()
@@ -230,9 +237,7 @@ class RawDustEvent:
         512  # The number of samples in a "block" of high sample data
     )
 
-    def __init__(
-        self, header_packet: space_packet_parser.parser.Packet, data_version: str
-    ) -> None:
+    def __init__(self, header_packet: xr.Dataset, data_version: str) -> None:
         """
         Initialize a raw dust event, with an FPGA Header Packet from IDEX.
 
@@ -260,7 +265,7 @@ class RawDustEvent:
         self._set_sample_trigger_times(header_packet)
         # Iterate through the trigger description dictionary and pull out the values
         self.trigger_values = {
-            trigger.name: header_packet.data[trigger.packet_name].raw_value
+            trigger.name: header_packet[trigger.packet_name].item()
             for trigger in trigger_description_dict.values()
         }
         logger.debug(
@@ -277,7 +282,7 @@ class RawDustEvent:
 
         self.cdf_attrs = get_idex_attrs(data_version)
 
-    def _set_impact_time(self, packet: space_packet_parser.parser.Packet) -> None:
+    def _set_impact_time(self, dataset: xr.Dataset) -> None:
         """
         Calculate the datetime64 from the FPGA header information.
 
@@ -285,7 +290,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        packet : space_packet_parser.parser.Packet
+        dataset : xr.Dataset
             The IDEX FPGA header packet.
 
         Notes
@@ -295,9 +300,9 @@ class RawDustEvent:
         IDEX has set the time launch to Jan 1 2012 for calibration testing.
         """
         # Number of seconds since epoch (nominally the launch time)
-        seconds_since_launch = packet.data["SHCOARSE"].derived_value
+        seconds_since_launch = dataset["shcoarse"].item()
         # Number of 20 microsecond "ticks" since the last second
-        num_of_20_microsecond_increments = packet.data["SHFINE"].derived_value
+        num_of_20_microsecond_increments = dataset["shfine"].item()
         # Number of microseconds since the last second
         microseconds_since_last_second = 20 * num_of_20_microsecond_increments
         # Get the datetime of Jan 1 2012 as the start date
@@ -307,9 +312,7 @@ class RawDustEvent:
             met, reference_epoch=np.datetime64("2012-01-01T00:00:00.000000000")
         )
 
-    def _set_sample_trigger_times(
-        self, packet: space_packet_parser.parser.Packet
-    ) -> None:
+    def _set_sample_trigger_times(self, dataset: xr.Dataset) -> None:
         """
         Calculate the actual sample trigger time.
 
@@ -318,7 +321,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        packet : space_packet_parser.parser.Packet
+        dataset : xr.Dataset
             The IDEX FPGA header packet info.
 
         Notes
@@ -338,15 +341,11 @@ class RawDustEvent:
             rather than the number of samples before triggering.
         """
         # Retrieve the number of samples of high gain delay
-        high_gain_delay = packet.data["IDX__TXHDRADC0IDELAY"].raw_value
+        high_gain_delay = dataset["idx__txhdradc0idelay"].item()
 
         # Retrieve number of low/high sample pretrigger blocks
-        num_low_sample_pretrigger_blocks = packet.data[
-            "IDX__TXHDRLSPREBLOCKS"
-        ].derived_value
-        num_high_sample_pretrigger_blocks = packet.data[
-            "IDX__TXHDRHSPREBLOCKS"
-        ].derived_value
+        num_low_sample_pretrigger_blocks = dataset["idx__txhdrlspreblocks"].item()
+        num_high_sample_pretrigger_blocks = dataset["idx__txhdrhspreblocks"].item()
 
         # Calculate the low and high sample trigger times based on the high gain delay
         # and the number of high sample/low sample pretrigger blocks
@@ -473,18 +472,18 @@ class RawDustEvent:
         )
         return time_high_sr_data
 
-    def parse_packet(self, packet: space_packet_parser.parser.Packet) -> None:
+    def parse_packet(self, dataset: xr.Dataset) -> None:
         """
         Parse IDEX data packets to populate bit strings.
 
         Parameters
         ----------
-        packet : space_packet_parser.parser.Packet
+        dataset : xr.Dataset
             A single science data packet for one of the 6.
             IDEX observables.
         """
-        scitype = packet.data["IDX__SCI0TYPE"].raw_value
-        raw_science_bits = packet.data["IDX__SCI0RAW"].raw_value
+        scitype = dataset["idx__sci0type"].item()
+        raw_science_bits = dataset["idx__sci0raw"].item()
         self._append_raw_data(scitype, raw_science_bits)
 
     def _append_raw_data(self, scitype: Scitype, bits: str) -> None:
@@ -532,6 +531,30 @@ class RawDustEvent:
         # Create object for CDF attrs
         idex_attrs = self.cdf_attrs
 
+        # Process the 6 primary data variables
+        tof_high_data = self._parse_high_sample_waveform(self.TOF_High_bits)
+        tof_low_data = self._parse_high_sample_waveform(
+            self.TOF_Low_bits
+        )  # OF_Low_bits
+        tof_mid_data = self._parse_high_sample_waveform(
+            self.TOF_Mid_bits
+        )  # TOF_Mid_bits
+        target_high_data = self._parse_low_sample_waveform(
+            self.Target_High_bits
+        )  # Target_High_bits
+        target_low_data = self._parse_low_sample_waveform(self.Target_Low_bits)
+        iron_grid_data = self._parse_low_sample_waveform(
+            self.Ion_Grid_bits
+        )  # Ion_Grid_bits
+
+        print("\n")
+        print(f"Length of TOF_High: {len(tof_high_data)}")
+        print(f"Length of TOF_Low: {len(tof_low_data)}")
+        print(f"Length of TOF_Mid: {len(tof_mid_data)}")
+        print(f"Length of target_high: {len(target_high_data)}")
+        print(f"Length of target_low: {len(target_low_data)}")
+        print(f"Length of iron_grid: {len(iron_grid_data)}")
+
         # Gather the huge number of trigger info metadata
         trigger_vars = {}
         for var, value in self.trigger_values.items():
@@ -547,7 +570,7 @@ class RawDustEvent:
         tof_high_xr = xr.DataArray(
             name="TOF_High",
             data=[self._parse_high_sample_waveform(self.TOF_High_bits)],
-            dims=("epoch", "time_high_ssr_dim"),
+            dims=("epoch", "time_high_sr"),
             # attrs=idex_cdf_attrs.tof_high_attrs.output(),
             attrs=idex_attrs.get_variable_attributes("tof_high_attrs"),
         )
@@ -599,7 +622,7 @@ class RawDustEvent:
         time_low_sr_xr = xr.DataArray(
             name="time_low_sr",
             data=[self._calc_low_sample_resolution(len(target_low_xr[0]))],
-            dims=("epoch", "time_low_sr_dim"),
+            dims=("epoch", "time_low_sr"),
             # attrs=idex_cdf_attrs.low_sr_attrs.output(),
             attrs=idex_attrs.get_variable_attributes("low_sr_attrs"),
         )
@@ -607,10 +630,21 @@ class RawDustEvent:
         time_high_sr_xr = xr.DataArray(
             name="time_high_sr",
             data=[self._calc_high_sample_resolution(len(tof_low_xr[0]))],
-            dims=("epoch", "time_high_sr_dim"),
+            dims=("epoch", "time_high_sr"),
             # attrs=idex_cdf_attrs.high_sr_attrs.output(),
             attrs=idex_attrs.get_variable_attributes("high_sr_attrs"),
         )
+
+        # time_high_sr_lengths = {
+        #     len(tof_high_xr["time_high_sr"]),
+        #     len(tof_low_xr["time_high_sr"]),
+        #     len(tof_mid_xr["time_high_sr"]),
+        # }
+        # if len(time_high_sr_lengths) > 1:
+        #     raise ValueError(
+        #         f"Conflicting dimension sizes for 'time_high_sr':
+        #           {time_high_sr_lengths}"
+        #     )
 
         # Combine to return a dataset object
         return xr.Dataset(
