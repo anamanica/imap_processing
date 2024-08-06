@@ -483,6 +483,7 @@ class RawDustEvent:
         """
         scitype = dataset["idx__sci0type"].item()
         raw_science_bits = dataset["idx__sci0raw"].item()
+
         self._append_raw_data(scitype, raw_science_bits)
 
     def _append_raw_data(self, scitype: Scitype, bits: str) -> None:
