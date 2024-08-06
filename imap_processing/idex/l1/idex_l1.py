@@ -164,7 +164,6 @@ class PacketParser:
         all_packet_event_numbers = ds["idx__sci0evtnum"]
 
         dust_events = {}
-
         for i in range(len(all_packet_sci_types)):
             scitype = all_packet_sci_types[i].item()
             event_number = all_packet_event_numbers[i].item()
@@ -554,6 +553,7 @@ class RawDustEvent:
         print(f"Length of target_high: {len(target_high_data)}")
         print(f"Length of target_low: {len(target_low_data)}")
         print(f"Length of iron_grid: {len(iron_grid_data)}")
+        print("TOF_Mid_bits: ", self.TOF_Mid_bits)
 
         # Gather the huge number of trigger info metadata
         trigger_vars = {}
