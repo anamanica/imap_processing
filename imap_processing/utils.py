@@ -372,47 +372,37 @@ def packet_file_to_datasets(
 
     dataset_by_apid = {}
 
-    for apid, data in data_dict.items():  # noqa
+    for apid, data in data_dict.items():
         # The time key is always the first key in the data dictionary on IMAP
         time_key = next(iter(data.keys()))
         # Convert to J2000 time and use that as our primary dimension
         time_data = met_to_j2000ns(data[time_key])
-    # fmt: skip
+        ds = xr.Dataset(
+            {
+                key.lower(): (
+                    "epoch",
+                    _create_minimum_dtype_array(
+                        list_of_values, dtype=datatype_mapping[apid][key]
+                    ),
+                )
+                for key, list_of_values in data.items()
+            },
+            coords={"epoch": time_data},
+        )
+        ds = ds.sortby("epoch")
 
-    # Ensure all data fields have the same length as time_data
-    # for key in list(data.keys()):
-    #     # Skipping and deleting key options
-    #     # if len(data[key]) != len(time_data):
-    #     #     data[key] = len(time_data)
-    #     #     print(f"Skipping key '{key}' due to length mismatch:
-    #     #           {len(data[key])} vs {len(time_data)}")
-    #     #     del data[key]
-    #     #     del datatype_mapping[apid][key] MAKE SURE TO ADD APID TO FOR LOOP
-    #
-    #     # Modifying length option
-    #     if len(data[key]) < len(time_data):
-    #         # Pad the list with NaN values
-    #         padding = [np.nan] * (len(time_data) - len(data[key]))
-    #         data[key].extend(padding)
-    #     elif len(data[key]) > len(time_data):
-    #         # Trim the list to match the length of time_data
-    #         data[key] = data[key][: len(time_data)]
+        # Strip any leading characters before "." from the field names which was due
+        # to the packet_name being a part of the variable name in the XTCE definition
+        ds = ds.rename(
+            {
+                # partition splits the string into 3 parts: before ".", ".", after "."
+                # if there was no ".", the second part is an empty string, so we use
+                # the original key in that case
+                key: key.partition(".")[2] or key
+                for key in ds.variables
+            }
+        )
 
-    ds = xr.Dataset(
-        {
-            key.lower(): (
-                "epoch",
-                _create_minimum_dtype_array(
-                    list_of_values, dtype=datatype_mapping[apid][key]
-                ),
-            )
-            for key, list_of_values in data.items()
-        },
-        coords={"epoch": time_data},
-    )
-
-    ds = ds.sortby("epoch")
-
-    dataset_by_apid[apid] = ds
+        dataset_by_apid[apid] = ds
 
     return dataset_by_apid
