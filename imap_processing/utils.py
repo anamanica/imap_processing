@@ -380,23 +380,23 @@ def packet_file_to_datasets(
     # fmt: skip
 
     # Ensure all data fields have the same length as time_data
-    for key in list(data.keys()):
-        # Skipping and deleting key options
-        # if len(data[key]) != len(time_data):
-        #     data[key] = len(time_data)
-        #     print(f"Skipping key '{key}' due to length mismatch:
-        #           {len(data[key])} vs {len(time_data)}")
-        #     del data[key]
-        #     del datatype_mapping[apid][key] MAKE SURE TO ADD APID TO FOR LOOP
-
-        # Modifying length option
-        if len(data[key]) < len(time_data):
-            # Pad the list with NaN values
-            padding = [np.nan] * (len(time_data) - len(data[key]))
-            data[key].extend(padding)
-        elif len(data[key]) > len(time_data):
-            # Trim the list to match the length of time_data
-            data[key] = data[key][: len(time_data)]
+    # for key in list(data.keys()):
+    #     # Skipping and deleting key options
+    #     # if len(data[key]) != len(time_data):
+    #     #     data[key] = len(time_data)
+    #     #     print(f"Skipping key '{key}' due to length mismatch:
+    #     #           {len(data[key])} vs {len(time_data)}")
+    #     #     del data[key]
+    #     #     del datatype_mapping[apid][key] MAKE SURE TO ADD APID TO FOR LOOP
+    #
+    #     # Modifying length option
+    #     if len(data[key]) < len(time_data):
+    #         # Pad the list with NaN values
+    #         padding = [np.nan] * (len(time_data) - len(data[key]))
+    #         data[key].extend(padding)
+    #     elif len(data[key]) > len(time_data):
+    #         # Trim the list to match the length of time_data
+    #         data[key] = data[key][: len(time_data)]
 
     ds = xr.Dataset(
         {
