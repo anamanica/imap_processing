@@ -9,6 +9,7 @@ from collections import namedtuple
 from enum import IntEnum
 
 import numpy as np
+import numpy.typing as npt
 import xarray as xr
 
 from imap_processing import imap_module_directory
@@ -419,7 +420,7 @@ class RawDustEvent:
             ]
         return ints
 
-    def _calc_low_sample_resolution(self, num_samples: int) -> np.ndarray:
+    def _calc_low_sample_resolution(self, num_samples: int) -> npt.NDArray:
         """
         Calculate the resolution of the low samples.
 
@@ -445,7 +446,7 @@ class RawDustEvent:
         )
         return time_low_sr_data
 
-    def _calc_high_sample_resolution(self, num_samples: int) -> np.ndarray:
+    def _calc_high_sample_resolution(self, num_samples: int) -> npt.NDArray:
         """
         Calculate the resolution of high samples.
 
