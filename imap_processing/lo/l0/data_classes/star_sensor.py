@@ -25,7 +25,7 @@ class StarSensor(LoBase):
 
     Parameters
     ----------
-    packet : space_packet_parser.parser.Packet
+    packet : space_packet_parser.packets.CCSDSPacket
         The packet.
     software_version : str
         Software version.
@@ -60,7 +60,7 @@ class StarSensor(LoBase):
     # must be commented out for the unit tests to run properly
     def __init__(
         self,
-        packet: space_packet_parser.parser.Packet,
+        packet: space_packet_parser.packets.CCSDSPacket,
         software_version: str,
         packet_file_name: str,
     ) -> None:
@@ -90,7 +90,9 @@ class StarSensor(LoBase):
             extracted_integer = int(binary_string.next_bits(bit_length), 2)
             # The Star Sensor packet uses a 12 to 8 bit compression
             decompressed_integer = decompress_int(
-                extracted_integer, Decompress.DECOMPRESS8TO12, DECOMPRESSION_TABLES
+                [extracted_integer], Decompress.DECOMPRESS8TO12, DECOMPRESSION_TABLES
             )
-            data_list.append(decompressed_integer)
+            # TODO: Need to update this to work with decompress_int outputting
+            #  a list of ints. Remove function from loop during refactor
+            data_list.append(decompressed_integer[0])
         self.DATA = np.array(data_list)

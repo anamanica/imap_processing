@@ -2,7 +2,6 @@
 
 from enum import Enum
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 
@@ -18,7 +17,8 @@ class Decompress(Enum):
 # Load all decompression tables into a dictionary.
 DECOMPRESSION_TABLES = {
     enum: np.loadtxt(
-        Path(__file__).parent.parent / f"decompression_tables/{enum.value}_bit.csv",
+        Path(__file__).parent.parent
+        / f"decompression_tables/log10_{enum.value}_bit_uncompress.csv",
         delimiter=",",
         skiprows=1,
     )
@@ -27,16 +27,16 @@ DECOMPRESSION_TABLES = {
 
 
 def decompress_int(
-    compressed_value: int, decompression: Decompress, decompression_lookup: dict
-) -> Any:
+    compressed_values: list, decompression: Decompress, decompression_lookup: dict
+) -> list[int]:
     # No idea what the correct type is for the return. Mypy says it is Any
     """
     Will decompress a data field using a specified bit conversion.
 
     Parameters
     ----------
-    compressed_value : int
-        A compressed integer.
+    compressed_values : list
+        Compressed integers.
     decompression : Decompress
         The decompression to use.
     decompression_lookup : dict
@@ -44,7 +44,7 @@ def decompress_int(
 
     Returns
     -------
-    decompressed :
+    decompressed : list[int]
         The decompressed integer.
     """
     valid_decompression = [
@@ -59,4 +59,6 @@ def decompress_int(
             + "Decompress.DECOMPRESS8TO12"
         )
     data = decompression_lookup[decompression]
-    return data[compressed_value][1]
+    # use 2 for Mean column in table
+    decompressed: list[int] = data[compressed_values, 2]
+    return decompressed

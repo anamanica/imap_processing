@@ -32,18 +32,29 @@ counts_default: &counts_default
   VAR_TYPE: data
   SCALETYP: linear
 
-compression_default: &compression_default
+flags_default:
+  CATDESC: Bitwise flag. There are 13 flags. See VAR_NOTES for more details.
+  FIELDNAM: Quality Flag
+  LABLAXIS: Flags
   DEPEND_0: epoch
   DEPEND_1: energy
   DISPLAY_TYPE: spectrogram
   LABL_PTR_1: energy_label
   FILLVAL: 4294967295
-  FORMAT: I1
+  FORMAT: I5
   UNITS: ' '
   VALIDMIN: 0
-  VALIDMAX: 1
+  VALIDMAX: 32767
   VAR_TYPE: data
   SCALETYP: linear
+  VAR_NOTES: >
+    There are 13 flags in total, first three flags are from science packets
+    and remaining 10 flags are from housekeeping packets. Flags are stored
+    as bitwise flag. 32767 is the value when all 15-bits are 1s. Eg.
+    int('0111111111111111', 2). First two bits from right are saved to save defaults.
+    Then, the remaining 13 bits from right are used for 13 flags. The flags are
+    as follows, "OVR_T_ST", "UND_T_ST", "PCEM_CNT_ST", "SCEM_CNT_ST","PCEM_V_ST",
+    "PCEM_I_ST", "PCEM_INT_ST", "SCEM_V_ST", "SCEM_I_ST", "SCEM_INT_ST".
 
 uncertainty_default: &uncertainty_default
   DEPEND_0: epoch
@@ -71,6 +82,17 @@ rate_default: &rate_default
   VAR_TYPE: data
   SCALETYP: linear
 
+metadata_default: &metadata_default
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: 4294967295
+  FORMAT: I2
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 15
+  VAR_TYPE: support_data
+  SCALETYP: linear
+
 pcem_counts:
   <<: *counts_default
   CATDESC: Primary Channel Electron Multiplier (CEM)  Counts
@@ -88,24 +110,6 @@ coin_counts:
   CATDESC: Coincidence Counts
   FIELDNAM: Coincidence CEM Counts
   LABLAXIS: coin_cnts
-
-pcem_flags:
-  <<: *compression_default
-  CATDESC: Primary Channel Electron Multiplier (CEM) compression flag
-  FIELDNAM: Primary CEM Flag
-  LABLAXIS: pcem_flag
-
-scem_flags:
-  <<: *compression_default
-  CATDESC: Secondary Channel Electron Multiplier (CEM) compression flag
-  FIELDNAM: Secondary CEM Flag
-  LABLAXIS: scem_flag
-
-coin_flags:
-  <<: *compression_default
-  CATDESC: Coincidence compression flag
-  FIELDNAM: Coincidence Flag
-  LABLAXIS: coin_flag
 
 pcem_uncertainty:
   <<: *uncertainty_default
@@ -142,3 +146,33 @@ coin_rate:
   CATDESC: Coincidence Rates
   FIELDNAM: Coincidence Rates
   LABLAXIS: coin_rate
+
+sweep_table:
+  <<: *metadata_default
+  CATDESC: Sweep table ID.
+  FIELDNAM: Sweep Table
+  LABLAXIS: ID
+
+plan_id:
+  <<: *metadata_default
+  CATDESC: Plan ID.
+  FIELDNAM: Plan ID
+  LABLAXIS: ID
+
+lut_choice:
+  <<: *metadata_default
+  CATDESC: Which LUT is in use.
+  FIELDNAM: LUT Choice
+  LABLAXIS: lut_choice
+
+fpga_type:
+  <<: *metadata_default
+  CATDESC: Type number of the FPGA.
+  FIELDNAM: FPGA Type
+  LABLAXIS: fpga_type
+
+fpga_rev:
+  <<: *metadata_default
+  CATDESC: Revision number of the FPGA.
+  FIELDNAM: FPGA Revision
+  LABLAXIS: fpga_rev

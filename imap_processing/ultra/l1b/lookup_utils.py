@@ -3,6 +3,7 @@
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+import xarray as xr
 
 from imap_processing import imap_module_directory
 
@@ -46,7 +47,7 @@ def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
     return _YADJUST_DF["dYAdj"].iloc[dy_lut].values
 
 
-def get_norm(dn: np.ndarray, key: str, file_label: str) -> npt.NDArray:
+def get_norm(dn: xr.DataArray, key: str, file_label: str) -> npt.NDArray:
     """
     Correct mismatches between the stop Time to Digital Converters (TDCs).
 
@@ -139,7 +140,7 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> npt.NDArra
     """
     row_number = ssd * 4096 + composite_energy
 
-    return _ENERGY_NORM_DF["NormEnergy"].values[row_number]
+    return _ENERGY_NORM_DF["NormEnergy"].iloc[row_number]
 
 
 def get_image_params(image: str) -> np.float64:

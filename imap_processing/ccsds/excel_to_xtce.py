@@ -78,6 +78,7 @@ class XTCEGenerator:
     """
 
     def __init__(self, path_to_excel_file: Path):
+        self.source_file = path_to_excel_file.name
         # Read in all sheets from the excel file
         self.sheets = pd.read_excel(path_to_excel_file, sheet_name=None)
         # Set up the packet mapping from packetName to Apid
@@ -123,6 +124,7 @@ class XTCEGenerator:
             ].values[0]
         )
         header.attrib["author"] = "IMAP SDC"
+        header.attrib["source_file"] = self.source_file
 
         # Create the TelemetryMetaData element
         self._telemetry_metadata = Et.SubElement(root, "xtce:TelemetryMetaData")
@@ -251,7 +253,6 @@ class XTCEGenerator:
         # Combine the packet name and mnemonic to create a unique parameter name
         name = f"{row['packetName']}.{row['mnemonic']}"
         parameter.attrib["name"] = name
-        # UINT8, ...
         parameter.attrib["parameterTypeRef"] = name
 
         # Add descriptions if they exist
@@ -329,6 +330,10 @@ class XTCEGenerator:
             # Go look up the conversion in the AnalogConversions tab
             # and add it to the encoding
             self._add_analog_conversion(row, encoding)
+        elif row["convertAs"] == "STATE":
+            # Go look up the states in the States tab
+            # and add them to the parameter type
+            self._add_state_conversion(row, parameter_type)
 
     def _add_analog_conversion(self, row: pd.Series, encoding: Et.Element) -> None:
         """
@@ -362,6 +367,66 @@ class XTCEGenerator:
                 term = Et.SubElement(polynomial_calibrator, "xtce:Term")
                 term.attrib["coefficient"] = str(conversion[col])
                 term.attrib["exponent"] = str(i)
+
+    def _add_state_conversion(self, row: pd.Series, parameter_type: Et.Element) -> None:
+        """
+        Add a state conversion to the parameter type.
+
+        Changing from an IntegerParameterType to an EnumeratedParameterType. Adding
+        the list of state mappings to the parameter type.
+
+        Parameters
+        ----------
+        row : pandas.Row
+            Row to be added to the XTCE file, containing mnemonic, packetName.
+        parameter_type : Element
+            The parameter type element to add the conversion to.
+        """
+        # It is an EnumeratedParameterType rather than an IntegerParameterType
+        parameter_type.tag = "xtce:EnumeratedParameterType"
+        enumeration_list = Et.SubElement(parameter_type, "xtce:EnumerationList")
+        # Lookup the enumeration states for this parameter from the States sheet
+        state_sheet = self.sheets["States"]
+        state_sheet = state_sheet.loc[
+            (state_sheet["packetName"] == row["packetName"])
+            & (state_sheet["mnemonic"] == row["mnemonic"])
+        ]
+        for _, state_row in state_sheet.iterrows():
+            enumeration = Et.SubElement(enumeration_list, "xtce:Enumeration")
+            valid_state = self._ensure_state_value_is_int(state_row)
+            enumeration.attrib["value"] = str(valid_state["value"])
+            enumeration.attrib["label"] = str(valid_state["state"])
+
+    def _ensure_state_value_is_int(self, state: dict) -> dict:
+        """
+        Ensure the telemetry state value is an integer.
+
+        Some telemetry state values are documented as a hex string,
+        which space packet parser cannot handle. If the value of a
+        state is a hex string rather than an int, convert it to an integer.
+        If the value is neither a hex string or an integer, raise an error.
+
+        Parameters
+        ----------
+        state : dict
+            Dictionary with telemetry state and value.
+
+        Returns
+        -------
+        dict
+            The dictionary for the state.
+        """
+        value = state["value"]
+        # return if already an int
+        if isinstance(value, int):
+            return state
+        # convert hex string to int
+        elif isinstance(value, str) and value.startswith("0x"):
+            state["value"] = int(value, 16)
+            return state
+        # raise error if value is neither a hex string or integer
+        else:
+            raise ValueError(f"Invalid value of {value} for state {state['state']}")
 
     def to_xml(self, output_xml_path: Path) -> None:
         """

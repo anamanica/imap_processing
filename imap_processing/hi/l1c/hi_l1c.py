@@ -1,13 +1,13 @@
 """IMAP-HI l1c processing module."""
 
 import logging
-from collections.abc import Sized
-from typing import Optional
 
 import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import parse_filename_like
+from imap_processing.hi.utils import full_dataarray
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +65,9 @@ def generate_pset_dataset(de_dataset: xr.Dataset) -> xr.Dataset:
     pset_dataset : xarray.Dataset
         Ready to be written to CDF.
     """
-    sensor_str = de_dataset.attrs["Logical_source"].split("_")[-1].split("-")[0]
+    logical_source_parts = parse_filename_like(de_dataset.attrs["Logical_source"])
     n_esa_step = de_dataset.esa_step.data.size
-    pset_dataset = allocate_pset_dataset(n_esa_step, sensor_str)
+    pset_dataset = allocate_pset_dataset(n_esa_step, logical_source_parts["sensor"])
     # TODO: Stored epoch value needs to be consistent across ENA instruments.
     #    SPDF says this should be the center of the time bin, but instrument
     #    teams may disagree.
@@ -94,7 +94,7 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
     """
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("hi")
-    attr_mgr.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
 
     # preallocate coordinates xr.DataArrays
     coords = dict()
@@ -106,13 +106,27 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
         attrs=attr_mgr.get_variable_attributes("epoch"),
     )
     attrs = attr_mgr.get_variable_attributes(
-        "hi_pset_esa_step", check_schema=False
+        "hi_pset_esa_energy_step", check_schema=False
     ).copy()
     dtype = attrs.pop("dtype")
-    coords["esa_step"] = xr.DataArray(
+    coords["esa_energy_step"] = xr.DataArray(
         np.full(n_esa_steps, attrs["FILLVAL"], dtype=dtype),
-        name="esa_step",
-        dims=["esa_step"],
+        name="esa_energy_step",
+        dims=["esa_energy_step"],
+        attrs=attrs,
+    )
+    # TODO: define calibration product number to coincidence type mapping and
+    #     use the number of calibration products here. I believe it will be 5
+    #     0 for any, 1-4, for the number of detector hits.
+    n_calibration_prod = 5
+    attrs = attr_mgr.get_variable_attributes(
+        "hi_pset_calibration_prod", check_schema=False
+    ).copy()
+    dtype = attrs.pop("dtype")
+    coords["calibration_prod"] = xr.DataArray(
+        np.arange(n_calibration_prod, dtype=dtype),
+        name="calibration_prod",
+        dims=["calibration_prod"],
         attrs=attrs,
     )
     # spin angle bins are 0.1 degree bins for full 360 degree spin
@@ -149,12 +163,20 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
         )
 
     # Generate label variables
-    data_vars["esa_step_label"] = xr.DataArray(
-        coords["esa_step"].values.astype(str),
-        name="esa_step_label",
-        dims=["esa_step"],
+    data_vars["esa_energy_step_label"] = xr.DataArray(
+        coords["esa_energy_step"].values.astype(str),
+        name="esa_energy_step_label",
+        dims=["esa_energy_step"],
         attrs=attr_mgr.get_variable_attributes(
-            "hi_pset_esa_step_label", check_schema=False
+            "hi_pset_esa_energy_step_label", check_schema=False
+        ),
+    )
+    data_vars["calibration_prod_label"] = xr.DataArray(
+        coords["calibration_prod"].values.astype(str),
+        name="calibration_prod_label",
+        dims=["calibration_prod"],
+        attrs=attr_mgr.get_variable_attributes(
+            "hi_pset_calibration_prod_label", check_schema=False
         ),
     )
     data_vars["spin_bin_label"] = xr.DataArray(
@@ -180,49 +202,3 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
     )
     dataset = xr.Dataset(data_vars=data_vars, coords=coords, attrs=pset_global_attrs)
     return dataset
-
-
-def full_dataarray(
-    name: str, attrs: dict, coords: dict, shape: Optional[Sized] = None
-) -> xr.DataArray:
-    """
-    Generate an empty xarray.DataArray with appropriate attributes.
-
-    Data in DataArray are filled with FILLVAL defined in attributes
-    retrieved from ATTR_MGR with shape matching coordinates defined by
-    dims or overridden by optional `shape` input.
-
-    Parameters
-    ----------
-    name : str
-        Variable name.
-    attrs : dict
-        CDF variable attributes. Usually retrieved from ImapCdfAttributes.
-    coords : dict
-        Coordinate variables for the Dataset.
-    shape : int or tuple
-        Shape of ndarray data array to instantiate in the xarray.DataArray.
-
-    Returns
-    -------
-    data_array : xarray.DataArray
-        Meeting input specifications.
-    """
-    _attrs = attrs.copy()
-    dtype = attrs.pop("dtype", None)
-
-    # extract dims keyword argument from DEPEND_i attributes
-    dims = [v for k, v in sorted(attrs.items()) if k.startswith("DEPEND")]
-    # define shape of the ndarray to generate
-    if shape is None:
-        shape = [coords[k].data.size for k in dims]
-    if len(shape) > len(dims):
-        dims.append("")
-
-    data_array = xr.DataArray(
-        np.full(shape, attrs["FILLVAL"], dtype=dtype),
-        name=name,
-        dims=dims,
-        attrs=attrs,
-    )
-    return data_array

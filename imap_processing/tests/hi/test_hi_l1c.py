@@ -2,15 +2,19 @@
 
 import numpy as np
 import pytest
-import xarray as xr
 
-from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.hi.l1b.hi_l1b import hi_l1b
 from imap_processing.hi.l1c import hi_l1c
 from imap_processing.hi.utils import HIAPID
 
 
+@pytest.mark.skip(
+    reason="See TODO in test comments. Need to convert this test"
+    "to use a test L1B file rather than running L1B on fake"
+    "data."
+)
 def test_generate_pset_dataset(create_de_data):
     """Test coverage for generate_pset_dataset function"""
     # TODO: once things are more stable, check in an L1B DE file as test data?
@@ -27,43 +31,26 @@ def test_generate_pset_dataset(create_de_data):
 def test_allocate_pset_dataset():
     """Test coverage for allocate_pset_dataset function"""
     n_esa_steps = 10
+    n_calibration_prods = 5
     sensor_str = HIAPID.H90_SCI_DE.sensor
     dataset = hi_l1c.allocate_pset_dataset(n_esa_steps, sensor_str)
 
     assert dataset.epoch.size == 1
     assert dataset.spin_angle_bin.size == 3600
+    assert dataset.esa_energy_step.size == n_esa_steps
+    assert dataset.calibration_prod.size == n_calibration_prods
     np.testing.assert_array_equal(dataset.despun_z.data.shape, (1, 3))
     np.testing.assert_array_equal(dataset.hae_latitude.data.shape, (1, 3600))
     np.testing.assert_array_equal(dataset.hae_longitude.data.shape, (1, 3600))
-    n_esa_step = dataset.esa_step.data.size
     for var in [
         "counts",
         "exposure_times",
         "background_rates",
         "background_rates_uncertainty",
     ]:
-        np.testing.assert_array_equal(dataset[var].data.shape, (1, n_esa_step, 3600))
-
-
-@pytest.mark.parametrize(
-    "name, shape, expected_shape",
-    [
-        ("despun_z", (1, 3), (1, 3)),
-        ("hae_latitude", None, (1, 360)),
-        ("counts", None, (1, 10, 360)),
-    ],
-)
-def test_full_dataarray(name, shape, expected_shape):
-    """Test coverage for full_dataarray function"""
-    coords = {
-        "epoch": xr.DataArray(np.array([0])),
-        "esa_step": xr.DataArray(np.arange(10)),
-        "spin_angle_bin": xr.DataArray(np.arange(360)),
-    }
-    cdf_manager = ImapCdfAttributes()
-    cdf_manager.load_variable_attributes("imap_hi_variable_attrs.yaml")
-
-    dataarray = hi_l1c.full_dataarray(
-        name, cdf_manager.get_variable_attributes(f"hi_pset_{name}"), coords, shape
-    )
-    assert dataarray.data.shape == expected_shape
+        np.testing.assert_array_equal(
+            dataset[var].data.shape, (1, n_esa_steps, n_calibration_prods, 3600)
+        )
+    # Verify resulting CDF is ISTP compliant by writing to disk
+    dataset.attrs["Data_version"] = 1
+    write_cdf(dataset)

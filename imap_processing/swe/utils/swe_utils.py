@@ -2,7 +2,9 @@
 
 from enum import IntEnum
 
-import space_packet_parser
+import pandas as pd
+
+from imap_processing import imap_module_directory
 
 
 class SWEAPID(IntEnum):
@@ -11,27 +13,16 @@ class SWEAPID(IntEnum):
     SWE_SCIENCE = 1344
 
 
-def add_metadata_to_array(
-    data_packet: space_packet_parser.parser.Packet, metadata_arrays: dict
-) -> dict:
+def read_lookup_table() -> pd.DataFrame:
     """
-    Add metadata to the metadata_arrays.
-
-    Parameters
-    ----------
-    data_packet : space_packet_parser.parser.Packet
-        SWE data packet.
-    metadata_arrays : dict
-        Metadata arrays.
+    Read lookup table.
 
     Returns
     -------
-    metadata_arrays : dict
-        The metadata_array with metadata from input data packet.
+    esa_table : pandas.DataFrame
+        ESA table.
     """
-    for key, value in data_packet.data.items():
-        if key == "SCIENCE_DATA":
-            continue
-        metadata_arrays.setdefault(key, []).append(value.raw_value)
-
-    return metadata_arrays
+    # Read lookup table
+    lookup_table_path = imap_module_directory / "swe/l1b/swe_esa_lookup_table.csv"
+    esa_table = pd.read_csv(lookup_table_path)
+    return esa_table

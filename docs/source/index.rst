@@ -14,6 +14,8 @@ The Science Operations Center (SOC) is responsible for the data processing on th
 IMAP mission and being developed at
 `LASP (Laboratory of Atmospheric and Space Physics) <https://lasp.colorado.edu/>`_.
 
+To get started with the project: :ref:`getting-started`.
+
 The explicit code interfaces and structure are described in the :ref:`code-documentation`.
 
 .. toctree::
@@ -23,7 +25,7 @@ The explicit code interfaces and structure are described in the :ref:`code-docum
    development-guide/index
    project-management/index
    external-tools/index
-   data-access-api/index
+   data-access/index
 
 If you make use of any ``imap_processing`` code, please consider citing it in your research.
 `https://zenodo.org/record/11168295 <https://zenodo.org/record/11168295>`_

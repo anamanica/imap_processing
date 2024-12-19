@@ -43,7 +43,7 @@ from imap_processing.hi.l1b import hi_l1b
 from imap_processing.hi.l1c import hi_l1c
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
 from imap_processing.hit.l1b.hit_l1b import hit_l1b
-from imap_processing.idex.l1.idex_l1 import PacketParser
+from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
@@ -257,6 +257,7 @@ class ProcessInstrument(ABC):
 
         # Convert string into a dictionary
         self.dependencies = loads(dependency_str.replace("'", '"'))
+        self._dependency_list: list = []
 
         self.start_date = start_date
         self.end_date = end_date
@@ -356,7 +357,8 @@ class ProcessInstrument(ABC):
         list[Path]
             List of dependencies downloaded from the IMAP SDC.
         """
-        return self.download_dependencies()
+        self._dependency_list = self.download_dependencies()
+        return self._dependency_list
 
     @abstractmethod
     def do_processing(self, dependencies: list) -> list[xr.Dataset]:
@@ -393,7 +395,10 @@ class ProcessInstrument(ABC):
             A list of datasets (products) produced by do_processing method.
         """
         logger.info("Writing products to local storage")
-        products = [write_cdf(dataset) for dataset in datasets]
+        products = [
+            write_cdf(dataset, parent_files=self._dependency_list)
+            for dataset in datasets
+        ]
         self.upload_products(products)
 
 
@@ -546,19 +551,21 @@ class Hit(ProcessInstrument):
                     f"Unexpected dependencies found for HIT L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            # process data and write all processed data to CDF files
+            # process data to L1A products
             datasets = hit_l1a(dependencies[0], self.version)
 
         elif self.data_level == "l1b":
-            if len(dependencies) > 1:
-                raise ValueError(
-                    f"Unexpected dependencies found for HIT L1B:"
-                    f"{dependencies}. Expected only one dependency."
-                )
-            # process data and write all processed data to CDF files
-            l1a_dataset = load_cdf(dependencies[0])
-
-            datasets = hit_l1b(l1a_dataset, self.version)
+            data_dict = {}
+            for i, dependency in enumerate(dependencies):
+                if self.dependencies[i]["data_level"] == "l0":
+                    # Add path to CCSDS file to process housekeeping
+                    data_dict["imap_hit_l0_raw"] = dependency
+                else:
+                    # Add L1A datasets to process science data
+                    dataset = load_cdf(dependency)
+                    data_dict[dataset.attrs["Logical_source"]] = dataset
+            # process data to L1B products
+            datasets = hit_l1b(data_dict, self.version)
 
         return datasets
 
@@ -622,8 +629,7 @@ class Lo(ProcessInstrument):
                     f"Unexpected dependencies found for IMAP-Lo L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            # TODO: This is returning the wrong type
-            datasets = [lo_l1a.lo_l1a(dependencies[0], self.version)]
+            datasets = lo_l1a.lo_l1a(dependencies[0], self.version)
 
         elif self.data_level == "l1b":
             data_dict = {}
