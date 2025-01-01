@@ -28,6 +28,8 @@ def get_idex_attrs(data_version: str) -> ImapCdfAttributes:
     """
     Load in CDF attributes for IDEX l2 files.
 
+    This is a test edit.
+
     Parameters
     ----------
     data_version : str
