@@ -12,7 +12,7 @@ from imap_processing.idex.idex_l1a import PacketParser
 @pytest.fixture()
 def decom_test_data():
     test_file = Path(
-        f"{imap_module_directory}/tests/idex/imap_idex_l0_raw_20230725_v001.pkts"
+        f"{imap_module_directory}/tests/idex/imap_idex_l0_raw_20231218_v001.pkts"
     )
     return PacketParser(test_file, "v001").data
 
@@ -21,7 +21,7 @@ def decom_test_data():
 def l1_cdf(decom_test_data):
     """
     from imap_processing.idex.idex_packet_parser import PacketParser
-    l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20230725_v001.pkts"
+    l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20231218_v001.pkts"
     l1_data = PacketParser(l0_file, data_version)
     l1_data.write_l1_cdf()
     """
