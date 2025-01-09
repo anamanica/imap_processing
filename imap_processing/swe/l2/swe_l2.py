@@ -1,9 +1,14 @@
-"""SWE L2 processing module."""
+"""
+SWE L2 processing module.
+
+This module contains functions to process L1B data to L2 data products.
+"""
 
 import numpy as np
 import numpy.typing as npt
 import xarray as xr
 
+from imap_processing.spice.geometry import get_spacecraft_spin_phase
 from imap_processing.swe.utils.swe_utils import read_lookup_table
 
 # TODO: add these to instrument status summary
@@ -169,3 +174,43 @@ def calculate_flux(l1b_dataset: xr.Dataset) -> npt.NDArray:
         * phase_space_density_ds["phase_space_density"].data
     )
     return flux
+
+
+def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+    """
+    Will process data to L2.
+
+    Parameters
+    ----------
+    l1b_dataset : xarray.Dataset
+        The L1B dataset to process.
+    data_version : str
+        Version of the data product being created.
+
+    Returns
+    -------
+    data : xarray.Dataset
+        Processed data to L2.
+    """
+    flux = calculate_flux(l1b_dataset)
+
+    # Calculate spin phase using SWE sci_step_acq_time_sec calculated in l1b.
+    # L1B dataset stores it by (epoch, energy, angle, cem).
+    data_acq_time = l1b_dataset["sci_step_acq_time_sec"].data.flatten()
+
+    # calculate spin phase
+    spin_phase = get_spacecraft_spin_phase(
+        query_met_times=data_acq_time,
+    ).reshape(-1, 24, 30, 7)
+    # TODO: organize flux data by energy and spin_phase.
+    # My understanding from conversation with Ruth is that this is the hardest part
+    # and last part of the L2 processing.
+
+    # TODO: Correct return value. This is just a placeholder.
+    return xr.Dataset(
+        {
+            "flux": (["epoch", "energy", "spin_phase", "cem"], flux),
+            "spin_phase": (["epoch", "energy", "spin_phase", "cem"], spin_phase),
+        },
+        coords=l1b_dataset.coords,
+    )
