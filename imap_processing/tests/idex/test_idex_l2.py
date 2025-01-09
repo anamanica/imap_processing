@@ -4,7 +4,7 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.idex.l1.idex_l1 import PacketParser
+from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.idex.l2.idex_l2 import L2Processor
 
 # from imap_processing.idex.l2.idex_l2 import read_and_return
